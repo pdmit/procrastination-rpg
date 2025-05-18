@@ -9,16 +9,18 @@ db = SQLAlchemy(app)
 
 class Player(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    strength = db.Column(db.Integer, default=0)
-    intelligence = db.Column(db.Integer, default=0)
-    vitality = db.Column(db.Integer, default=0)
-    charisma = db.Column(db.Integer, default=0)
+    strength = db.Column(db.Integer, default=1)
+    intelligence = db.Column(db.Integer, default=1)
+    vitality = db.Column(db.Integer, default=1)
+    charisma = db.Column(db.Integer, default=1)
     current_stat = db.Column(db.String(20), default=None)
     task_start = db.Column(db.Float, default=0.0)
 
 @app.before_request
 def load_player():
-    if "player_id" not in session:
+    player_id = session.get("player_id")
+    player = Player.query.get(player_id) if player_id else None
+    if player is None:
         player = Player()
         db.session.add(player)
         db.session.commit()

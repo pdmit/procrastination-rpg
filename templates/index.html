@@ -10,20 +10,19 @@
   <div class="container">
     <h1>🧠 Procrastination RPG</h1>
     <div class="battle">
-      <img id="playerSprite" src="{{ url_for('static', filename='knight.gif') }}" alt="Player">
-      <img id="monsterSprite" src="{{ url_for('static', filename='slime.gif') }}" alt="Monster">
+      <div class="entity">
+        <img id="playerSprite" src="{{ url_for('static', filename='knight.gif') }}" alt="Player">
+        <div class="health-bar">
+          <div id="playerHealthBar"></div>
+        </div>
+      </div>
+      <div class="entity">
+        <img id="monsterSprite" src="{{ url_for('static', filename='slime.gif') }}" alt="Monster">
+        <div class="health-bar">
+          <div id="monsterHealthBar"></div>
+        </div>
+      </div>
     </div>
-  <div class="battle">
-    <div class="entity">
-      <img id="playerSprite" src="{{ url_for('static', filename='player.gif') }}" alt="Player">
-      <div class="health-bar"><div id="playerHealthBar"></div></div>
-    </div>
-    <div class="entity">
-      <img id="monsterSprite" src="{{ url_for('static', filename='monster.gif') }}" alt="Monster">
-      <div class="health-bar"><div id="monsterHealthBar"></div></div>
-    </div>
-  </div>
-
   <p id="goldDisplay">Gold: 0</p>
     <div class="actions">
       <button id="btn-strength" onclick="startTask('strength')">💪 Strength (0)</button>
