@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Procrastination RPG</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 Procrastination RPG</h1>
+    <div class="battle">
+      <img id="playerSprite" src="{{ url_for('static', filename='knight.gif') }}" alt="Player">
+      <img id="monsterSprite" src="{{ url_for('static', filename='slime.gif') }}" alt="Monster">
+    </div>
+  <div class="battle">
+    <div class="entity">
+      <img id="playerSprite" src="{{ url_for('static', filename='player.gif') }}" alt="Player">
+      <div class="health-bar"><div id="playerHealthBar"></div></div>
+    </div>
+    <div class="entity">
+      <img id="monsterSprite" src="{{ url_for('static', filename='monster.gif') }}" alt="Monster">
+      <div class="health-bar"><div id="monsterHealthBar"></div></div>
+    </div>
+  </div>
+
+  <p id="goldDisplay">Gold: 0</p>
+    <div class="actions">
+      <button id="btn-strength" onclick="startTask('strength')">💪 Strength (0)</button>
+      <button id="btn-intelligence" onclick="startTask('intelligence')">🧠 Intelligence (0)</button>
+      <button id="btn-vitality" onclick="startTask('vitality')">❤️ Vitality (0)</button>
+      <button id="btn-charisma" onclick="startTask('charisma')">😎 Charisma (0)</button>
+    </div>
+    <p id="timerDisplay"></p>
+    <p id="levelingStatus" style="margin-top: 1rem;"></p>
+    <div id="progressContainer">
+      <div id="progressBar"></div>
+    </div>
+    <div id="confirmModal" class="modal">
+      <div class="modal-content">
+        <p>Did you complete the task?</p>
+        <button onclick="completeTask(true)">✅ Yes</button>
+        <button onclick="completeTask(false)">❌ No</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
