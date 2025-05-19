@@ -63,7 +63,12 @@ def complete():
     return jsonify(success=True)
 
 if __name__ == "__main__":
-    if not os.path.exists("game.db"):
+    if os.environ.get("RESET_DB") == "1":
+        if os.path.exists("game.db"):
+            os.remove("game.db")
+        with app.app_context():
+            db.create_all()
+    elif not os.path.exists("game.db"):
         with app.app_context():
             db.create_all()
     app.run(debug=True)
