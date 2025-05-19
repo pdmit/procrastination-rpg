@@ -41,6 +41,39 @@ class EquippedItem(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey("shop_item.id"))
     item = db.relationship("ShopItem")
 
+# --- Helpers ---
+def apply_item_effect(player, effect):
+    if effect and "+" in effect:
+        attr, val = effect.split("+")
+        val = int(val)
+        if hasattr(player, attr):
+            setattr(player, attr, getattr(player, attr) + val)
+
+def apply_bonuses(player, bonuses, remove=False):
+    if bonuses:
+        for bonus in bonuses.split(";"):
+            if "+" in bonus:
+                stat, val = bonus.split("+")
+                val = int(val)
+                if remove:
+                    val = -val
+                if hasattr(player, stat):
+                    setattr(player, stat, getattr(player, stat) + val)
+
+def equip_item_to_player(player, item):
+    if not item or not item.slot:
+        return False
+
+    existing = EquippedItem.query.filter_by(player_id=player.id, slot=item.slot).first()
+    if existing:
+        apply_bonuses(player, existing.item.bonuses, remove=True)
+        db.session.delete(existing)
+
+    apply_bonuses(player, item.bonuses)
+    equipped = EquippedItem(player_id=player.id, slot=item.slot, item_id=item.id)
+    db.session.add(equipped)
+    return True
+
 # --- Player Session Management ---
 @app.before_request
 def load_player():
@@ -84,26 +117,6 @@ def state():
         "equipment": equipment
     })
 
-@app.route("/equip", methods=["POST"])
-def equip_item():
-    player = Player.query.get(session["player_id"])
-    item_id = request.json.get("item_id")
-    item = ShopItem.query.get(item_id)
-    if not item or not item.slot:
-        return jsonify(success=False, message="Invalid item")
-
-    existing = EquippedItem.query.filter_by(player_id=player.id, slot=item.slot).first()
-    if existing:
-        apply_bonuses(player, existing.item.bonuses, remove=True)
-        db.session.delete(existing)
-
-    apply_bonuses(player, item.bonuses)
-    equip = EquippedItem(player_id=player.id, slot=item.slot, item_id=item.id)
-    db.session.add(equip)
-    db.session.commit()
-
-    return jsonify(success=True, message=f"Equipped {item.name}")
-
 @app.route("/shop")
 def shop():
     items = ShopItem.query.all()
@@ -129,28 +142,28 @@ def buy():
 
     if item and player.gold >= item.cost:
         player.gold -= item.cost
-        apply_item_effect(player, item.effect)
+
+        if item.effect:
+            apply_item_effect(player, item.effect)
+
+        if item.slot and item.bonuses:
+            equip_item_to_player(player, item)
+
         db.session.commit()
         return jsonify(success=True, message=f"Purchased {item.name}")
     return jsonify(success=False, message="Not enough gold or invalid item")
 
-def apply_item_effect(player, effect):
-    if effect and "+" in effect:
-        attr, val = effect.split("+")
-        val = int(val)
-        if hasattr(player, attr):
-            setattr(player, attr, getattr(player, attr) + val)
+@app.route("/equip", methods=["POST"])
+def equip_item():
+    player = Player.query.get(session["player_id"])
+    item_id = request.json.get("item_id")
+    item = ShopItem.query.get(item_id)
 
-def apply_bonuses(player, bonuses, remove=False):
-    if bonuses:
-        for bonus in bonuses.split(";"):
-            if "+" in bonus:
-                stat, val = bonus.split("+")
-                val = int(val)
-                if remove:
-                    val = -val
-                if hasattr(player, stat):
-                    setattr(player, stat, getattr(player, stat) + val)
+    success = equip_item_to_player(player, item)
+    if success:
+        db.session.commit()
+        return jsonify(success=True, message=f"Equipped {item.name}")
+    return jsonify(success=False, message="Invalid item or slot")
 
 @app.route("/start", methods=["POST"])
 def start():

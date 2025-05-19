@@ -1,0 +1,7 @@
+name,icon,cost,description,effect,slot,bonuses
+Iron Sword,sword.png,20,A basic weapon for beginners.,,weapon,strength+2
+Steel Sword,sword_steel.png,50,Stronger than iron.,,weapon,strength+4
+Leather Armor,armor_leather.png,25,Simple but effective protection.,,armor,vitality+2
+Plate Armor,armor_plate.png,75,Heavy armor that provides excellent defense.,,armor,vitality+4
+Ring of Wisdom,ring_wisdom.png,30,Increases your intelligence.,,accessory,intelligence+3
+Charm of Charisma,charm_charisma.png,30,Boosts your charm.,,accessory,charisma+3
