@@ -62,6 +62,10 @@ def complete():
     db.session.commit()
     return jsonify(success=True)
 
+with app.app_context():
+    db.create_all()
+    print("Creating tables...")
+
 if __name__ == "__main__":
     if os.environ.get("RESET_DB") == "1":
         if os.path.exists("game.db"):
