@@ -31,6 +31,15 @@ class ShopItem(db.Model):
     cost = db.Column(db.Integer)
     description = db.Column(db.String(200))
     effect = db.Column(db.String(50))  # e.g. "vitality+1" or custom
+    slot = db.Column(db.String(20))  # e.g., "weapon", "armor", "accessory"
+    bonuses = db.Column(db.String(100))  # e.g., "strength+2;vitality+1"
+
+class EquippedItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    player_id = db.Column(db.Integer, db.ForeignKey("player.id"))
+    slot = db.Column(db.String(20))
+    item_id = db.Column(db.Integer, db.ForeignKey("shop_item.id"))
+    item = db.relationship("ShopItem")
 
 # --- Player Session Management ---
 @app.before_request
@@ -56,6 +65,10 @@ def state():
         monster = Monster()
         db.session.add(monster)
         db.session.commit()
+
+    equipped_items = EquippedItem.query.filter_by(player_id=player.id).all()
+    equipment = {e.slot: e.item.name for e in equipped_items}
+
     return jsonify({
         "strength": player.strength,
         "intelligence": player.intelligence,
@@ -67,10 +80,29 @@ def state():
         "current_stat": player.current_stat,
         "task_start": player.task_start,
         "monster_health": monster.health,
-        "monster_max": 50
+        "monster_max": 50,
+        "equipment": equipment
     })
 
+@app.route("/equip", methods=["POST"])
+def equip_item():
+    player = Player.query.get(session["player_id"])
+    item_id = request.json.get("item_id")
+    item = ShopItem.query.get(item_id)
+    if not item or not item.slot:
+        return jsonify(success=False, message="Invalid item")
 
+    existing = EquippedItem.query.filter_by(player_id=player.id, slot=item.slot).first()
+    if existing:
+        apply_bonuses(player, existing.item.bonuses, remove=True)
+        db.session.delete(existing)
+
+    apply_bonuses(player, item.bonuses)
+    equip = EquippedItem(player_id=player.id, slot=item.slot, item_id=item.id)
+    db.session.add(equip)
+    db.session.commit()
+
+    return jsonify(success=True, message=f"Equipped {item.name}")
 
 @app.route("/shop")
 def shop():
@@ -82,7 +114,9 @@ def shop():
             "icon": item.icon,
             "cost": item.cost,
             "description": item.description,
-            "effect": item.effect
+            "effect": item.effect,
+            "slot": item.slot,
+            "bonuses": item.bonuses
         }
         for item in items
     ])
@@ -106,6 +140,17 @@ def apply_item_effect(player, effect):
         val = int(val)
         if hasattr(player, attr):
             setattr(player, attr, getattr(player, attr) + val)
+
+def apply_bonuses(player, bonuses, remove=False):
+    if bonuses:
+        for bonus in bonuses.split(";"):
+            if "+" in bonus:
+                stat, val = bonus.split("+")
+                val = int(val)
+                if remove:
+                    val = -val
+                if hasattr(player, stat):
+                    setattr(player, stat, getattr(player, stat) + val)
 
 @app.route("/start", methods=["POST"])
 def start():
@@ -159,6 +204,14 @@ def battle():
 
     db.session.commit()
     return jsonify(success=True)
+
+@app.route("/add-gold", methods=["POST"])
+def add_gold():
+    player = Player.query.get(session["player_id"])
+    player.gold += 50
+    db.session.commit()
+    return jsonify(success=True)
+
 
 # --- Ensure DB is initialized on Render too ---
 with app.app_context():

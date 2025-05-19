@@ -12,6 +12,7 @@ function loadState() {
       updateStatButtons(data);
       updateHealthBars(data);
       updateGold(data.gold);
+      updateEquipment(data.equipment);
 
       if (data.current_stat && data.task_start > 0) {
         task = data.current_stat;
@@ -135,6 +136,13 @@ function updateHealthBars(data) {
   prevMonsterHealth = data.monster_health;
 }
 
+function updateEquipment(equipment) {
+  ['weapon', 'armor', 'accessory'].forEach(slot => {
+    const el = document.querySelector(`#slot-${slot} span`);
+    el.textContent = equipment[slot] || 'None';
+  });
+}
+
 function triggerDamageAnimation(element) {
   element.classList.remove("sprite-hit");
   void element.offsetWidth; // reflow to restart animation
@@ -194,6 +202,13 @@ function buyItem(itemId, cost) {
     loadState();
     loadShop();
   });
+}
+
+function addGold() {
+  fetch("/add-gold", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" }
+  }).then(() => loadState());
 }
 
 window.onload = () => {

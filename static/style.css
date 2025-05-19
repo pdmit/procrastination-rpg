@@ -271,3 +271,52 @@ button:disabled {
 .shop-item button:hover {
   background: #666;
 }
+
+.inventory-panel {
+  background: #2b2b2b;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+  margin-top: 24px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+}
+
+.inventory-panel h2 {
+  color: #00d4ff;
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+}
+
+.equipped-slots {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.slot {
+  background: #1f1f1f;
+  padding: 10px;
+  border-radius: 8px;
+  width: 30%;
+  text-align: left;
+  font-size: 0.9rem;
+  color: #ddd;
+}
+
+.dev-button {
+  background-color: #444;
+  color: gold;
+  border: 1px solid #666;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.dev-button:hover {
+  background-color: #555;
+}

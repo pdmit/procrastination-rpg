@@ -31,7 +31,26 @@
         </div>
       </div>
     </div>
-  <p id="goldDisplay">Gold: 0</p>
+    <!-- Inventory Panel -->
+    <div id="inventoryPanel" class="inventory-panel">
+      <h2>🎒 Inventory</h2>
+      <div id="equippedItems" class="equipped-slots">
+        <div class="slot" id="slot-weapon"><strong>Weapon:</strong> <span></span></div>
+        <div class="slot" id="slot-armor"><strong>Armor:</strong> <span></span></div>
+        <div class="slot" id="slot-accessory"><strong>Accessory:</strong> <span></span></div>
+      </div>
+    </div>
+    <p id="goldDisplay">Gold: 0</p>
+    <!-- Dev-only gold button -->
+    <div id="devTools">
+      <button onclick="addGold()" class="dev-button">💰 Add 50 Gold</button>
+    </div>
+    <!-- Only show if ?dev=true -->
+    <script>
+      if (!window.location.search.includes("dev=true")) {
+        document.getElementById("devTools").style.display = "none";
+      }
+    </script>
     <div class="actions">
       <button id="btn-strength" onclick="startTask('strength')">💪 Strength (0)</button>
       <button id="btn-intelligence" onclick="startTask('intelligence')">🧠 Intelligence (0)</button>
