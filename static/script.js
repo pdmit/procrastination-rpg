@@ -2,6 +2,8 @@ let task = null;
 let timerEnd = null;
 let interval = null;
 let battleInterval = null;
+let prevPlayerHealth = null;
+let prevMonsterHealth = null;
 
 function loadState() {
   fetch("/state")
@@ -107,8 +109,50 @@ function updateGold(gold) {
 function updateHealthBars(data) {
   const playerPercent = (data.health / data.max_health) * 100;
   const monsterPercent = (data.monster_health / data.monster_max) * 100;
+
   document.getElementById("playerHealthBar").style.width = `${playerPercent}%`;
   document.getElementById("monsterHealthBar").style.width = `${monsterPercent}%`;
+
+  document.getElementById("playerHealthText").textContent = `${data.health} / ${data.max_health}`;
+  document.getElementById("monsterHealthText").textContent = `${data.monster_health} / ${data.monster_max}`;
+
+  const playerSprite = document.getElementById("playerSprite");
+  const monsterSprite = document.getElementById("monsterSprite");
+
+  if (prevPlayerHealth !== null && data.health < prevPlayerHealth) {
+    const dmg = prevPlayerHealth - data.health;
+    triggerDamageAnimation(playerSprite);
+    showFloatingDamage("playerEntity", dmg);
+  }
+
+  if (prevMonsterHealth !== null && data.monster_health < prevMonsterHealth) {
+    const dmg = prevMonsterHealth - data.monster_health;
+    triggerDamageAnimation(monsterSprite);
+    showFloatingDamage("monsterEntity", dmg);
+  }
+
+  prevPlayerHealth = data.health;
+  prevMonsterHealth = data.monster_health;
+}
+
+function triggerDamageAnimation(element) {
+  element.classList.remove("sprite-hit");
+  void element.offsetWidth; // reflow to restart animation
+  element.classList.add("sprite-hit");
+}
+
+function showFloatingDamage(entityId, amount) {
+  const container = document.getElementById(entityId);
+  const float = document.createElement("div");
+  float.className = "floating-damage";
+  float.textContent = `-${amount}`;
+
+  float.style.left = `${Math.random() * 60 + 20}px`; // random offset
+  container.appendChild(float);
+
+  setTimeout(() => {
+    float.remove();
+  }, 1000);
 }
 
 function doBattle() {
@@ -116,5 +160,43 @@ function doBattle() {
     method: "POST"
   }).then(() => loadState());
 }
+function loadShop() {
+  fetch("/shop")
+    .then(res => res.json())
+    .then(items => {
+      const shopDiv = document.getElementById("shop");
+      shopDiv.innerHTML = "";
+      items.forEach(item => {
+        const el = document.createElement("div");
+        el.className = "shop-item";
+        el.innerHTML = `
+          <img src="/static/icons/${item.icon}" alt="${item.name}" class="shop-icon">
+          <div>
+            <strong>${item.name}</strong><br>
+            <small>${item.description}</small><br>
+            <button onclick="buyItem(${item.id}, ${item.cost})">Buy (${item.cost}g)</button>
+          </div>
+        `;
+        shopDiv.appendChild(el);
+      });
+    });
+}
 
-window.onload = loadState;
+function buyItem(itemId, cost) {
+  fetch("/buy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ item_id: itemId })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(data.message);
+    loadState();
+    loadShop();
+  });
+}
+
+window.onload = () => {
+  loadState();
+  loadShop();
+};

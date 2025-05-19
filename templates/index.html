@@ -9,17 +9,25 @@
 <body>
   <div class="container">
     <h1>🧠 Procrastination RPG</h1>
+    <div id="shopPanel" class="shop-panel">
+      <h2>🛒 Shop</h2>
+      <div id="shop" class="shop-grid">
+        <!-- Items will be injected by JS -->
+      </div>
+    </div>
     <div class="battle">
-      <div class="entity">
+      <div class="entity" id="playerEntity">
         <img id="playerSprite" src="{{ url_for('static', filename='knight.gif') }}" alt="Player">
         <div class="health-bar">
-          <div id="playerHealthBar"></div>
+          <span id="playerHealthText" class="health-text"></span>
+          <div id="playerHealthBar" class="health-fill"></div>
         </div>
       </div>
-      <div class="entity">
+      <div class="entity" id="monsterEntity">
         <img id="monsterSprite" src="{{ url_for('static', filename='slime.gif') }}" alt="Monster">
         <div class="health-bar">
-          <div id="monsterHealthBar"></div>
+          <span id="monsterHealthText" class="health-text"></span>
+          <div id="monsterHealthBar" class="health-fill"></div>
         </div>
       </div>
     </div>

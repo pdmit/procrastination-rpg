@@ -140,15 +140,134 @@ button:disabled {
 .health-bar {
   background: #444;
   width: 100%;
-  height: 10px;
+  height: 20px;
   margin-top: 5px;
   border-radius: 5px;
   overflow: hidden;
+  position: relative;
+  font-family: monospace;
+  text-align: center;
 }
 
-.health-bar div {
+.health-fill {
   background: #6fcf97;
   height: 100%;
   width: 100%;
+  position: relative;
   transition: width 0.3s;
+}
+
+.health-text {
+  position: absolute;
+  line-height: 20px;
+  color: #fff;
+  font-size: 0.8rem;
+  left: 0;
+  right: 0;
+  z-index: 1;
+}
+
+@keyframes damage-flash {
+  0%   { filter: none; }
+  25%  { filter: brightness(1.5) hue-rotate(-30deg); }
+  50%  { filter: brightness(0.8) hue-rotate(30deg); }
+  100% { filter: none; }
+}
+
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-6px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-4px); }
+  80%  { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+
+.sprite-hit {
+  animation: damage-flash 0.3s ease-in-out, shake 0.3s ease-in-out;
+}
+
+.floating-damage {
+  position: absolute;
+  font-size: 1rem;
+  font-weight: bold;
+  color: red;
+  animation: float-up 1s ease-out forwards;
+  pointer-events: none;
+  text-shadow: 1px 1px 2px black;
+  z-index: 10;
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.9);
+  }
+}
+
+.entity {
+  position: relative; /* so damage numbers are positioned relative to the sprite */
+}
+
+.shop-panel {
+  background: #2b2b2b;
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+  margin-bottom: 24px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.shop-panel h2 {
+  color: #ffd700;
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.shop-item {
+  display: flex;
+  background: #1f1f1f;
+  border-radius: 10px;
+  padding: 10px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #333;
+}
+
+.shop-icon {
+  height: 48px;
+  width: 48px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #333;
+}
+
+.shop-item button {
+  background: #444;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.shop-item button:hover {
+  background: #666;
 }

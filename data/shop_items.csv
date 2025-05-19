@@ -1,0 +1,5 @@
+name,icon,cost,description,effect
+Vitality Potion,heart.png,20,Gain +1 Vitality,vitality+1
+Book of Knowledge,black-book.png,30,Gain +1 Intelligence,intelligence+1
+Axe,hatchet.png,25,Gain +1 Strength,strength+1
+Sunglasses,sunglasses.png,15,Gain +1 Charisma,charisma+1
