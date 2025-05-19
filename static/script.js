@@ -30,6 +30,22 @@ function loadState() {
       if (!battleInterval) {
         battleInterval = setInterval(doBattle, 2000);
       }
+      if (data.quest) {
+        document.getElementById("questText").textContent =
+          `Train ${data.quest.stat} ${data.quest.goal} times`;
+        document.getElementById("questProgress").textContent =
+          `Progress: ${data.quest.progress} / ${data.quest.goal}`;
+        document.getElementById("questReward").textContent =
+          `Reward: ${data.quest.reward} gold`;
+
+        const now = Date.now() / 1000;
+        const secondsLeft = Math.max(0, 86400 - (now - data.quest.created_at));
+        const hrs = Math.floor(secondsLeft / 3600);
+        const mins = Math.floor((secondsLeft % 3600) / 60);
+        const secs = Math.floor(secondsLeft % 60);
+        document.getElementById("questTimeLeft").textContent =
+          `Refreshes in: ${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+     }
     });
 }
 

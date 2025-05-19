@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify, request, session
 from flask_sqlalchemy import SQLAlchemy
-import os, time
+import os, time, random
 
 app = Flask(__name__)
 app.secret_key = "procrastination-rpg"
@@ -41,6 +41,17 @@ class EquippedItem(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey("shop_item.id"))
     item = db.relationship("ShopItem")
 
+class Quest(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    player_id = db.Column(db.Integer, db.ForeignKey("player.id"))
+    stat = db.Column(db.String(20))  # e.g. "strength"
+    goal = db.Column(db.Integer)  # how many levels
+    progress = db.Column(db.Integer, default=0)
+    reward = db.Column(db.Integer)
+    completed = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.Float)  # timestamp
+
+
 # --- Helpers ---
 def apply_item_effect(player, effect):
     if effect and "+" in effect:
@@ -60,6 +71,34 @@ def apply_bonuses(player, bonuses, remove=False):
                 if hasattr(player, stat):
                     setattr(player, stat, getattr(player, stat) + val)
 
+def apply_scaled_effect(player, effect, reverse=False):
+    """
+    Applies effects like: scale:target=source or scale:target=source*multiplier
+    Example: scale:health=vitality*5
+    """
+    if not effect or not effect.startswith("scale:"):
+        return
+
+    try:
+        _, mapping = effect.split(":")
+        target, expr = mapping.split("=")
+
+        # Extract multiplier (default = 1)
+        if "*" in expr:
+            source, multiplier = expr.split("*")
+            multiplier = int(multiplier)
+        else:
+            source = expr
+            multiplier = 1
+
+        if hasattr(player, target) and hasattr(player, source):
+            value = getattr(player, source) * multiplier
+            if reverse:
+                value = -value
+            setattr(player, target, getattr(player, target) + value)
+    except Exception as e:
+        print("❌ Failed to apply scaled effect:", effect, e)
+
 def equip_item_to_player(player, item):
     if not item or not item.slot:
         return False
@@ -67,12 +106,62 @@ def equip_item_to_player(player, item):
     existing = EquippedItem.query.filter_by(player_id=player.id, slot=item.slot).first()
     if existing:
         apply_bonuses(player, existing.item.bonuses, remove=True)
+        apply_scaled_effect(player, existing.item.effect, reverse=True)
         db.session.delete(existing)
 
     apply_bonuses(player, item.bonuses)
+    apply_scaled_effect(player, item.effect)
     equipped = EquippedItem(player_id=player.id, slot=item.slot, item_id=item.id)
     db.session.add(equipped)
     return True
+
+def get_might(player):
+    base = 1 + player.strength
+    bonus = 0
+
+    equipped_items = EquippedItem.query.filter_by(player_id=player.id).all()
+
+    for equipped in equipped_items:
+        item = equipped.item
+        if item.effect and item.effect.startswith("scale:"):
+            try:
+                _, mapping = item.effect.split(":")
+                target, expr = mapping.split("=")
+
+                # Support multiplier: source*factor
+                if "*" in expr:
+                    source, factor = expr.split("*")
+                    factor = int(factor)
+                else:
+                    source = expr
+                    factor = 1
+
+                if target in ("strength", "might") and hasattr(player, source):
+                    val = getattr(player, source)
+                    bonus += val * factor
+
+            except Exception as e:
+                print(f"Error parsing scaled might effect: {item.effect}", e)
+
+    return base + bonus
+
+def generate_quest_for_player(player):
+    stat = random.choice(["strength", "intelligence", "vitality", "charisma"])
+    goal = random.randint(1, 3)
+    reward = goal * random.randint(1000, 1200)
+
+    quest = Quest(
+        player_id=player.id,
+        stat=stat,
+        goal=goal,
+        progress=0,
+        reward=reward,
+        completed=False,
+        created_at=time.time()
+    )
+    db.session.add(quest)
+    db.session.commit()
+
 
 # --- Player Session Management ---
 @app.before_request
@@ -102,6 +191,15 @@ def state():
     equipped_items = EquippedItem.query.filter_by(player_id=player.id).all()
     equipment = {e.slot: e.item.name for e in equipped_items}
 
+    quest = Quest.query.filter_by(player_id=player.id).order_by(Quest.created_at.desc()).first()
+    quest_data = {
+        "stat": quest.stat,
+        "goal": quest.goal,
+        "progress": quest.progress,
+        "reward": quest.reward,
+        "completed": quest.completed
+    } if quest else None
+
     return jsonify({
         "strength": player.strength,
         "intelligence": player.intelligence,
@@ -114,8 +212,16 @@ def state():
         "task_start": player.task_start,
         "monster_health": monster.health,
         "monster_max": 50,
-        "equipment": equipment
+        "equipment": equipment,
+        "quest": quest_data
     })
+
+def check_and_refresh_quest(player):
+    existing = Quest.query.filter_by(player_id=player.id).order_by(Quest.created_at.desc()).first()
+    now = time.time()
+    if not existing or (now - existing.created_at > 86400):
+        generate_quest_for_player(player)
+
 
 @app.route("/shop")
 def shop():
@@ -183,34 +289,36 @@ def complete():
     player.current_stat = None
     player.task_start = 0
     db.session.commit()
+    quest = Quest.query.filter_by(player_id=player.id, stat=player.current_stat, completed=False).first()
+    if quest:
+        quest.progress += 1
+        if quest.progress >= quest.goal:
+            quest.completed = True
+            player.gold += quest.reward
     return jsonify(success=True)
+
 
 @app.route("/battle", methods=["POST"])
 def battle():
     player = Player.query.get(session["player_id"])
     monster = Monster.query.first()
 
-    # Calculate player might and health
-    player_might = 10 + 5 * player.strength
+    player_might = get_might(player)
+    player_damage = player_might * 10
     monster_might = monster.might
     max_health = 100 + 10 * player.vitality
 
-    # Player attacks monster
-    monster.health -= player_might
+    monster.health -= player_damage
 
     if monster.health <= 0:
-        # Monster dies
         player.gold += 5
         player.health = max_health
         db.session.delete(monster)
         db.session.commit()
-
-        # Spawn a new monster
         new_monster = Monster()
         db.session.add(new_monster)
         db.session.commit()
     else:
-        # Monster retaliates
         player.health -= monster_might
         if player.health < 0:
             player.health = 0

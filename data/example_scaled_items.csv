@@ -1,0 +1,7 @@
+name,icon,cost,description,effect,slot,bonuses
+Magic Staff,staff_magic.png,60,Grants +1 Might per Intelligence.,scale:strength=intelligence,weapon,
+Staff of Amplification,staff_amp.png,100,Grants +2 Might per Intelligence.,scale:strength=intelligence*2,weapon,
+Reinforced Armor,armor_reinforced.png,70,+5 Health per Vitality.,scale:health=vitality*5,armor,
+Amulet of Protection,amulet_protect.png,50,+5 Health per Intelligence.,scale:health=intelligence*5,accessory,
+Strength Sword,sword_strength.png,60,Grants +1 Might per Strength.,scale:strength=strength,weapon,
+Charismatic Blade,sword_charisma.png,55,Grants +3 Might per Charisma.,scale:strength=charisma*3,weapon,

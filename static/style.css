@@ -320,3 +320,23 @@ button:disabled {
 .dev-button:hover {
   background-color: #555;
 }
+.quest-panel {
+  background: #2a2a2a;
+  color: #f0f0f0;
+  padding: 16px;
+  border-radius: 12px;
+  margin-top: 24px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+.quest-panel h2 {
+  color: #ffa500;
+  margin-bottom: 12px;
+}
+
+.quest-panel p {
+  margin: 6px 0;
+}
