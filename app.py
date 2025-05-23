@@ -149,19 +149,41 @@ def generate_quest_for_player(player):
     stat = random.choice(["strength", "intelligence", "vitality", "charisma"])
     goal = random.randint(1, 3)
     reward = goal * random.randint(1000, 1200)
-
     quest = Quest(
-        player_id=player.id,
-        stat=stat,
-        goal=goal,
-        progress=0,
-        reward=reward,
-        completed=False,
+        player_id=player.id, stat=stat, goal=goal,
+        reward=reward, progress=0, completed=False,
         created_at=time.time()
     )
     db.session.add(quest)
     db.session.commit()
 
+def check_and_refresh_quest(player):
+    q = Quest.query.filter_by(player_id=player.id).order_by(Quest.created_at.desc()).first()
+    now = time.time()
+    if not q or now - q.created_at > 86400:
+        generate_quest_for_player(player)
+
+def track_quest_progress(player, stat):
+    q = Quest.query.filter_by(player_id=player.id, stat=stat, completed=False).first()
+    if q:
+        q.progress += 1
+        if q.progress >= q.goal:
+            q.completed = True
+            player.gold += q.reward
+        db.session.commit()
+
+def get_player_quest(player):
+    q = Quest.query.filter_by(player_id=player.id).order_by(Quest.created_at.desc()).first()
+    if not q:
+        return None
+    return {
+        "stat": q.stat,
+        "goal": q.goal,
+        "progress": q.progress,
+        "reward": q.reward,
+        "completed": q.completed,
+        "created_at": q.created_at
+    }
 
 # --- Player Session Management ---
 @app.before_request
@@ -182,6 +204,7 @@ def index():
 @app.route("/state")
 def state():
     player = Player.query.get(session["player_id"])
+    check_and_refresh_quest(player)
     monster = Monster.query.first()
     if not monster:
         monster = Monster()
@@ -190,16 +213,6 @@ def state():
 
     equipped_items = EquippedItem.query.filter_by(player_id=player.id).all()
     equipment = {e.slot: e.item.name for e in equipped_items}
-
-    quest = Quest.query.filter_by(player_id=player.id).order_by(Quest.created_at.desc()).first()
-    quest_data = {
-        "stat": quest.stat,
-        "goal": quest.goal,
-        "progress": quest.progress,
-        "reward": quest.reward,
-        "completed": quest.completed
-    } if quest else None
-
     return jsonify({
         "strength": player.strength,
         "intelligence": player.intelligence,
@@ -213,15 +226,8 @@ def state():
         "monster_health": monster.health,
         "monster_max": 50,
         "equipment": equipment,
-        "quest": quest_data
+        "quest": get_player_quest(player)
     })
-
-def check_and_refresh_quest(player):
-    existing = Quest.query.filter_by(player_id=player.id).order_by(Quest.created_at.desc()).first()
-    now = time.time()
-    if not existing or (now - existing.created_at > 86400):
-        generate_quest_for_player(player)
-
 
 @app.route("/shop")
 def shop():
@@ -286,15 +292,10 @@ def complete():
     data = request.json
     if data["success"] and player.current_stat:
         setattr(player, player.current_stat, getattr(player, player.current_stat) + 1)
+        track_quest_progress(player, player.current_stat)
     player.current_stat = None
     player.task_start = 0
     db.session.commit()
-    quest = Quest.query.filter_by(player_id=player.id, stat=player.current_stat, completed=False).first()
-    if quest:
-        quest.progress += 1
-        if quest.progress >= quest.goal:
-            quest.completed = True
-            player.gold += quest.reward
     return jsonify(success=True)
 
 
